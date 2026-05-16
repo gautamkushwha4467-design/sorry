@@ -25,9 +25,10 @@ let particles = [];
 let foodSpawnRate = 60;
 let spawnCounter = 0;
 
-// Keyboard controls
+// Controls
 const keys = {};
 
+// Laptop keyboard controls
 window.addEventListener('keydown', (e) => {
     keys[e.key] = true;
 });
@@ -36,43 +37,32 @@ window.addEventListener('keyup', (e) => {
     keys[e.key] = false;
 });
 
-// Mobile button controls
+// Mobile controls
 const leftBtn = document.getElementById('leftBtn');
 const rightBtn = document.getElementById('rightBtn');
 
-leftBtn.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    player.x -= 40;
-
-    if (player.x < 0) {
-        player.x = 0;
-    }
+leftBtn.addEventListener('pointerdown', () => {
+    keys['leftMobile'] = true;
 });
 
-rightBtn.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    player.x += 40;
-
-    if (player.x + player.width > canvas.width) {
-        player.x = canvas.width - player.width;
-    }
+leftBtn.addEventListener('pointerup', () => {
+    keys['leftMobile'] = false;
 });
 
-// Also works with mouse click
-leftBtn.addEventListener('click', () => {
-    player.x -= 40;
-
-    if (player.x < 0) {
-        player.x = 0;
-    }
+leftBtn.addEventListener('pointerleave', () => {
+    keys['leftMobile'] = false;
 });
 
-rightBtn.addEventListener('click', () => {
-    player.x += 40;
+rightBtn.addEventListener('pointerdown', () => {
+    keys['rightMobile'] = true;
+});
 
-    if (player.x + player.width > canvas.width) {
-        player.x = canvas.width - player.width;
-    }
+rightBtn.addEventListener('pointerup', () => {
+    keys['rightMobile'] = false;
+});
+
+rightBtn.addEventListener('pointerleave', () => {
+    keys['rightMobile'] = false;
 });
 
 function startGame() {
@@ -81,6 +71,7 @@ function startGame() {
 
     gameActive = true;
     score = 0;
+
     document.getElementById('scoreValue').textContent = score;
 
     player.x = canvas.width / 2 - 20;
@@ -98,18 +89,30 @@ function gameLoop() {
 
     update();
     draw();
+
     requestAnimationFrame(gameLoop);
 }
 
 function update() {
-    // Laptop keyboard movement
+
+    // Movement
     player.dx = 0;
 
-    if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
+    if (
+        keys['ArrowLeft'] ||
+        keys['a'] ||
+        keys['A'] ||
+        keys['leftMobile']
+    ) {
         player.dx = -player.speed;
     }
 
-    if (keys['ArrowRight'] || keys['d'] || keys['D']) {
+    if (
+        keys['ArrowRight'] ||
+        keys['d'] ||
+        keys['D'] ||
+        keys['rightMobile']
+    ) {
         player.dx = player.speed;
     }
 
@@ -124,14 +127,17 @@ function update() {
         player.x = canvas.width - player.width;
     }
 
-    // Spawn food and bad items
+    // Spawn food
     spawnCounter++;
 
     if (spawnCounter > foodSpawnRate) {
+
         spawnCounter = 0;
 
         const foodTypes = ['🍔', '🍕'];
-        const randomFood = foodTypes[Math.floor(Math.random() * foodTypes.length)];
+
+        const randomFood =
+            foodTypes[Math.floor(Math.random() * foodTypes.length)];
 
         foodItems.push({
             x: Math.random() * (canvas.width - 30),
@@ -142,6 +148,7 @@ function update() {
             speed: 3 + Math.random()
         });
 
+        // Bad items
         if (Math.random() < 0.3) {
             badItems.push({
                 x: Math.random() * (canvas.width - 30),
@@ -156,10 +163,13 @@ function update() {
 
     // Update food items
     for (let i = foodItems.length - 1; i >= 0; i--) {
+
         foodItems[i].y += foodItems[i].speed;
 
         if (checkCollision(player, foodItems[i])) {
+
             score++;
+
             document.getElementById('scoreValue').textContent = score;
 
             createParticles(foodItems[i].x, foodItems[i].y, '❤️');
@@ -172,31 +182,41 @@ function update() {
             if (score >= GOAL) {
                 endGame();
             }
+
         } else if (foodItems[i].y > canvas.height) {
+
             foodItems.splice(i, 1);
         }
     }
 
     // Update bad items
     for (let i = badItems.length - 1; i >= 0; i--) {
+
         badItems[i].y += badItems[i].speed;
 
         if (checkCollision(player, badItems[i])) {
+
             score = Math.max(0, score - 1);
+
             document.getElementById('scoreValue').textContent = score;
 
             player.x = canvas.width / 2 - 20;
 
             createParticles(badItems[i].x, badItems[i].y, '😰');
+
             badItems.splice(i, 1);
+
         } else if (badItems[i].y > canvas.height) {
+
             badItems.splice(i, 1);
         }
     }
 
     // Update particles
     for (let i = particles.length - 1; i >= 0; i--) {
+
         particles[i].life--;
+
         particles[i].y -= 2;
 
         if (particles[i].life <= 0) {
@@ -206,36 +226,61 @@ function update() {
 }
 
 function draw() {
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw player
+    // Player
     ctx.font = '40px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('👤', player.x + player.width / 2, player.y + player.height / 2);
 
-    // Draw food
+    ctx.fillText(
+        '👤',
+        player.x + player.width / 2,
+        player.y + player.height / 2
+    );
+
+    // Food
     ctx.font = '28px Arial';
+
     for (let food of foodItems) {
-        ctx.fillText(food.emoji, food.x + food.width / 2, food.y + food.height / 2);
+
+        ctx.fillText(
+            food.emoji,
+            food.x + food.width / 2,
+            food.y + food.height / 2
+        );
     }
 
-    // Draw bad items
-    ctx.font = '28px Arial';
+    // Bad items
     for (let bad of badItems) {
-        ctx.fillText(bad.emoji, bad.x + bad.width / 2, bad.y + bad.height / 2);
+
+        ctx.fillText(
+            bad.emoji,
+            bad.x + bad.width / 2,
+            bad.y + bad.height / 2
+        );
     }
 
-    // Draw particles
+    // Particles
     ctx.font = '14px Arial';
+
     for (let particle of particles) {
+
         ctx.globalAlpha = particle.life / 30;
-        ctx.fillText(particle.emoji, particle.x, particle.y);
+
+        ctx.fillText(
+            particle.emoji,
+            particle.x,
+            particle.y
+        );
+
         ctx.globalAlpha = 1;
     }
 }
 
 function checkCollision(rect1, rect2) {
+
     return (
         rect1.x < rect2.x + rect2.width &&
         rect1.x + rect1.width > rect2.x &&
@@ -245,7 +290,9 @@ function checkCollision(rect1, rect2) {
 }
 
 function createParticles(x, y, emoji) {
+
     for (let i = 0; i < 3; i++) {
+
         particles.push({
             x: x + Math.random() * 20 - 10,
             y: y,
@@ -265,13 +312,20 @@ const messages = [
 ];
 
 function showMessage() {
-    const msg = messages[Math.floor(Math.random() * messages.length)];
+
+    const msg =
+        messages[Math.floor(Math.random() * messages.length)];
+
     console.log(msg);
 }
 
 function endGame() {
+
     gameActive = false;
 
-    document.getElementById('gameScreen').classList.remove('active');
-    document.getElementById('finalScreen').classList.add('active');
+    document.getElementById('gameScreen')
+        .classList.remove('active');
+
+    document.getElementById('finalScreen')
+        .classList.add('active');
 }
