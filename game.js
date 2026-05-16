@@ -16,62 +16,80 @@ const player = {
     dx: 0
 };
 
-// Arrays to store game objects
+// Arrays
 let foodItems = [];
 let badItems = [];
 let particles = [];
 
-// Game speeds
+// Game speed
 let foodSpawnRate = 60;
 let spawnCounter = 0;
 
-// Keyboard input
+// Keyboard controls
 const keys = {};
+
 window.addEventListener('keydown', (e) => {
     keys[e.key] = true;
 });
+
 window.addEventListener('keyup', (e) => {
     keys[e.key] = false;
-  // Mobile button controls
+});
+
+// Mobile button controls
 const leftBtn = document.getElementById('leftBtn');
 const rightBtn = document.getElementById('rightBtn');
 
-function pressLeft() {
-    keys['ArrowLeft'] = true;
-}
+leftBtn.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    player.x -= 40;
 
-function releaseLeft() {
-    keys['ArrowLeft'] = false;
-}
+    if (player.x < 0) {
+        player.x = 0;
+    }
+});
 
-function pressRight() {
-    keys['ArrowRight'] = true;
-}
+rightBtn.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    player.x += 40;
 
-function releaseRight() {
-    keys['ArrowRight'] = false;
-}
+    if (player.x + player.width > canvas.width) {
+        player.x = canvas.width - player.width;
+    }
+});
 
-leftBtn.addEventListener('touchstart', pressLeft);
-leftBtn.addEventListener('touchend', releaseLeft);
-leftBtn.addEventListener('mousedown', pressLeft);
-leftBtn.addEventListener('mouseup', releaseLeft);
+// Also works with mouse click
+leftBtn.addEventListener('click', () => {
+    player.x -= 40;
 
-rightBtn.addEventListener('touchstart', pressRight);
-rightBtn.addEventListener('touchend', releaseRight);
-rightBtn.addEventListener('mousedown', pressRight);
-rightBtn.addEventListener('mouseup', releaseRight);
+    if (player.x < 0) {
+        player.x = 0;
+    }
+});
+
+rightBtn.addEventListener('click', () => {
+    player.x += 40;
+
+    if (player.x + player.width > canvas.width) {
+        player.x = canvas.width - player.width;
+    }
 });
 
 function startGame() {
     document.getElementById('startScreen').classList.remove('active');
     document.getElementById('gameScreen').classList.add('active');
+
     gameActive = true;
     score = 0;
+    document.getElementById('scoreValue').textContent = score;
+
+    player.x = canvas.width / 2 - 20;
+
     foodItems = [];
     badItems = [];
     particles = [];
     spawnCounter = 0;
+
     gameLoop();
 }
 
@@ -84,11 +102,13 @@ function gameLoop() {
 }
 
 function update() {
-    // Player movement
+    // Laptop keyboard movement
     player.dx = 0;
+
     if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
         player.dx = -player.speed;
     }
+
     if (keys['ArrowRight'] || keys['d'] || keys['D']) {
         player.dx = player.speed;
     }
@@ -96,19 +116,23 @@ function update() {
     player.x += player.dx;
 
     // Boundary check
-    if (player.x < 0) player.x = 0;
+    if (player.x < 0) {
+        player.x = 0;
+    }
+
     if (player.x + player.width > canvas.width) {
         player.x = canvas.width - player.width;
     }
 
     // Spawn food and bad items
     spawnCounter++;
+
     if (spawnCounter > foodSpawnRate) {
         spawnCounter = 0;
 
-        // Spawn food (burgers and pizza)
         const foodTypes = ['🍔', '🍕'];
         const randomFood = foodTypes[Math.floor(Math.random() * foodTypes.length)];
+
         foodItems.push({
             x: Math.random() * (canvas.width - 30),
             y: -30,
@@ -118,7 +142,6 @@ function update() {
             speed: 3 + Math.random()
         });
 
-        // Occasionally spawn bad items (angry emoji)
         if (Math.random() < 0.3) {
             badItems.push({
                 x: Math.random() * (canvas.width - 30),
@@ -135,19 +158,17 @@ function update() {
     for (let i = foodItems.length - 1; i >= 0; i--) {
         foodItems[i].y += foodItems[i].speed;
 
-        // Check collision with player
         if (checkCollision(player, foodItems[i])) {
             score++;
             document.getElementById('scoreValue').textContent = score;
+
             createParticles(foodItems[i].x, foodItems[i].y, '❤️');
             createParticles(foodItems[i].x, foodItems[i].y, foodItems[i].emoji);
 
-            // Show cute message
-            showMessage(foodItems[i]);
+            showMessage();
 
             foodItems.splice(i, 1);
 
-            // Check if goal reached
             if (score >= GOAL) {
                 endGame();
             }
@@ -160,15 +181,12 @@ function update() {
     for (let i = badItems.length - 1; i >= 0; i--) {
         badItems[i].y += badItems[i].speed;
 
-        // Check collision with player (game over)
         if (checkCollision(player, badItems[i])) {
-            // Lose points and reset
             score = Math.max(0, score - 1);
             document.getElementById('scoreValue').textContent = score;
-            
-            // Move player back to start
+
             player.x = canvas.width / 2 - 20;
-            
+
             createParticles(badItems[i].x, badItems[i].y, '😰');
             badItems.splice(i, 1);
         } else if (badItems[i].y > canvas.height) {
@@ -180,6 +198,7 @@ function update() {
     for (let i = particles.length - 1; i >= 0; i--) {
         particles[i].life--;
         particles[i].y -= 2;
+
         if (particles[i].life <= 0) {
             particles.splice(i, 1);
         }
@@ -187,7 +206,6 @@ function update() {
 }
 
 function draw() {
-    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Draw player
@@ -196,7 +214,7 @@ function draw() {
     ctx.textBaseline = 'middle';
     ctx.fillText('👤', player.x + player.width / 2, player.y + player.height / 2);
 
-    // Draw food items
+    // Draw food
     ctx.font = '28px Arial';
     for (let food of foodItems) {
         ctx.fillText(food.emoji, food.x + food.width / 2, food.y + food.height / 2);
@@ -246,15 +264,14 @@ const messages = [
     "Almost there! 🌟"
 ];
 
-function showMessage(item) {
+function showMessage() {
     const msg = messages[Math.floor(Math.random() * messages.length)];
-    // You could add a floating text display here
     console.log(msg);
-  
 }
 
 function endGame() {
     gameActive = false;
+
     document.getElementById('gameScreen').classList.remove('active');
     document.getElementById('finalScreen').classList.add('active');
 }
