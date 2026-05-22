@@ -4,7 +4,7 @@ const ctx = canvas.getContext('2d');
 // Game states
 let gameActive = false;
 let score = 0;
-const GOAL = 10;
+const GOAL = 100;
 
 // Player
 const player = {
